@@ -10,6 +10,9 @@ project (
 
 
 add_subdirectory (cmake/phake)
+if (NOT TARGET ph_coroutines)
+	add_subdirectory (dependencies/ph_coroutines)
+endif ()
 
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 	

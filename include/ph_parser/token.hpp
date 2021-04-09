@@ -10,6 +10,8 @@ struct token
         number,
         plus,
         minus,
+        mult,
+        div,
         lparen,
         rparen
     };

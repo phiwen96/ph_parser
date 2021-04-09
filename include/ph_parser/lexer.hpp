@@ -30,7 +30,7 @@ auto lex (string const& input) -> vector <token>
                 }
                 else
                 {
-                    result.push_back (token {token::number, num.m_number});
+                    result.push_back (token {token::type::number, num.m_number});
                     num.m_power = 0;
                     num.m_number.clear ();
                 }
@@ -38,26 +38,26 @@ auto lex (string const& input) -> vector <token>
             
             if (c == '+')
             {
-                result.push_back (token {token::plus, "+"});
+                result.push_back (token {token::type::plus, "+"});
             }
             else if (c == '-')
             {
-                result.push_back (token {token::minus, "-"});
+                result.push_back (token {token::type::minus, "-"});
             }
             else if (c == '(')
             {
-                result.push_back (token {token::lparen, "("});
+                result.push_back (token {token::type::lparen, "("});
             }
             else if (c == ')')
             {
-                result.push_back (token {token::rparen, "+"});
+                result.push_back (token {token::type::rparen, "+"});
             }
         }
     }
     
     if (num.m_power > 0)
     {
-        result.push_back (token {token::number, num.m_number});
+        result.push_back (token {token::type::number, num.m_number});
     }
     
     return result;
