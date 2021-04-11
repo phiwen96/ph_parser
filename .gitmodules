@@ -7,3 +7,9 @@
 [submodule "dependencies/ph_coroutines"]
 	path = dependencies/ph_coroutines
 	url = https://github.com/phiwen96/ph_coroutines
+[submodule "dependencies/ph_type_list"]
+	path = dependencies/ph_type_list
+	url = https://github.com/phiwen96/ph_type_list
+[submodule "dependencies/ph_macros"]
+	path = dependencies/ph_macros
+	url = https://github.com/phiwen96/ph_macros
