@@ -64,7 +64,14 @@ struct parser
     
     struct promise_type : co_promise <parser>
     {
-        
+        promise_type ()
+        {
+//            cout << "promise_type (" << coroutine_handle<promise_type>::from_promise (*this).address() << ")" << endl;
+        }
+        ~promise_type ()
+        {
+//            cout << "~promise_type (" << coroutine_handle<promise_type>::from_promise (*this).address() << ")" << endl;
+        }
         operator coroutine_handle <promise_type> ()
         {
             return coroutine_handle <promise_type>::from_promise (*this);
@@ -97,7 +104,8 @@ struct parser
                 promise_type& m_promise;
                 auto await_ready () noexcept -> bool
                 {
-                    
+//                    cout << "final_suspend!!" << endl;
+//                    return coroutine_handle<promise_type>::from_promise (m_promise).done();
                     return false;
                 }
                 
@@ -110,18 +118,25 @@ struct parser
                 auto await_suspend (coroutine_handle <promise_type> my_handle) noexcept -> coroutine_handle <>
                 {
                     auto& parent_promise = *my_handle.promise().m_parent;
-                    auto& parent_handle = parent_promise.m_this_function_co_awaited_me;
-                    if (parent_handle)
+                    
+                    if (my_handle.promise().m_this_function_co_awaited_me)
                     {
+                        
+                        auto& parent_handle = my_handle.promise().m_this_function_co_awaited_me;
+
 //                        cout << "kuk" << endl;
                         parent_promise.m_current = &parent_promise;
                         /**
                          why above doesn't work????
                          */
 //                        my_handle.promise().m_parent -> m_current = my_handle.promise().m_parent;
+//                        cout << "rumpa" << endl;
+                        return coroutine_handle<promise_type>::from_promise (*parent_promise.m_current);
+
                         return parent_handle;
                     } else
                     {
+                        cout << "whaaaat" << endl;
                         return noop_coroutine ();
                     }
                     
@@ -138,32 +153,7 @@ struct parser
             return i_was_co_awaited {*this};
         }
         
-        auto await_transform (_get_token)
-        {
-            struct awaitable
-            {
-                promise_type& m_promise;
-                
-                auto await_ready ()
-                {
-                    return true;
-                }
-                
-                auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
-                {
-//                    return co_awaited_me;
-                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
-                    return true;
-                }
-                
-                auto await_resume () -> variant <TOKENS> &
-                {
-//                    return m_promise.m_stack.top();
-                    return m_promise.m_current_token;
-                }
-            };
-            return awaitable {*this};
-        }
+      
         
         template <typename... T>
         auto await_transform (type_list_t <T...> tl)
@@ -178,12 +168,14 @@ struct parser
                 auto await_ready ()
                 {
 //                    cout << "await_ready" << endl;
-                    return false;
-//                    return m_handle.done();
+//                    return false;
+                    return m_handle.done();
                 }
                 
                 auto await_suspend (coroutine_handle <promise_type> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
+                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
+
 //                    cout << "await_suspend" << endl;
                     return true;
                 }
@@ -260,20 +252,22 @@ struct parser
                 coroutine_handle<promise_type> m_handle = coroutine_handle<promise_type>::from_promise(m_promise);
                 auto await_ready ()
                 {
-//                    return m_handle.done();
-                    return false;
+                    return m_handle.done();
+//                    return false;
                 }
                 
                 auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
+//                    cout << "await_suspend!" << endl;
                     m_promise.m_this_function_co_awaited_me = co_awaited_me;
                     return true;
                 }
                 
                 auto await_resume () -> auto&
                 {
-                    return m_promise.m_return_value;
                     cout << "await_resume" << endl;
+
+                    return m_promise.m_return_value;
 //                    return m_promise.m_return_token;
                 }
             };
@@ -284,14 +278,23 @@ struct parser
         {
             if (m_current == this)
             {
+//                if (coroutine_handle <promise_type>::from_promise (*this).done ())
+//                {
+//                    cout << "lol " << e << " " << coroutine_handle<promise_type>::from_promise(*this).address() << endl;
+//
+//                    m_parent->m_current = m_parent;
+//
+////                    m_parent -> parse (e);
+//                }
 //                m_stack.push (e);
-
                 if (m_ok (e))
                 {
+                    
                     m_current_token = e;
 //                    m_current_token = e;
 //                    cout << "tjo" << endl;
-                    
+//                    cout << "adding token " << e << " " << coroutine_handle<promise_type>::from_promise(*this).address() << endl;
+//                    cout << coroutine_handle <promise_type>::from_promise (*m_current).done () << endl;
                     coroutine_handle <promise_type>::from_promise (*m_current).resume ();
                 } else
                 {
@@ -332,7 +335,7 @@ struct parser
     }
     ~parser ()
     {
-//        coroutine_handle <promise_type>::from_promise (m_promise).destroy();
+        coroutine_handle <promise_type>::from_promise (m_promise).destroy();
     }
     parser (parser const&) = delete;
     parser& operator=(parser const&) = delete;
