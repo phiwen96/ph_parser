@@ -57,21 +57,110 @@ auto factor () -> parser
 {
     cout << "factor..." << endl;
     
-    auto& token = co_await type_list <ph::number_t, ph::rparen_t>;
-    
-    if (token == ph::number_t {})
+//    auto& token = co_await type_list <ph::number_t, ph::rparen_t>;
+begin:
     {
-        cout << "number" << token << endl;
-    } else if (token == ph::rparen_t {})
-    {
-        cout << "rparen" << endl;
+        auto& token = co_await type_list <ph::number_t, ph::minus_t, ph::lparen_t>;
+        
+        if (token == ph::number_t {})
+        {
+            co_return token;
+            
+        } else if (token == ph::minus_t {})
+        {
+            cout << "minus" << endl;
+
+//            goto minus;
+            
+        } else
+        {
+            cout << "number" << endl;
+            co_return ph::number_t {};
+//            goto lparen;
+        }
     }
     
-    auto& a = co_await get_token;
+    
+    minus:
+    {
+        cout << "a..." << endl;
+        auto& token = co_await type_list <ph::number_t, ph::expression_t>;
+        cout << "...a" << endl;
+//        cout << token << endl;
+    }
+//    if (token == ph::number_t {})
+//    {
+//        cout << "number" << endl;
+//
+////        co_return ph::number_t {};
+//    }
+    
+    
+//    minus:
+//    {
+//        auto& token = co_await type_list <ph::number_t, ph::minus_t, ph::lparen_t>;
+//
+//
+//        if (token == ph::number_t {})
+//        {
+////            co_return ph::factor_t <ph::minus_t, ph::number_t> {move (token)};
+//
+//        } else
+//        {
+////            co_return ph::number_t {};
+////            goto minus_lparen;
+//        }
+//    }
+    
+    
+//    lparen:
+//
+//
+//    minus_lparen:
+    
+    
+
+    
+//    auto& m_stack = co_await get_stack;
+//
+//    if (token == ph::number_t {})
+//    {
+////        cout << "number" << token << endl;
+//
+//
+//        if (m_stack.empty ())
+//        {
+//            co_return ph::factor_t<ph::number_t> {token};
+//
+//        } else if (m_stack.top() == ph::minus_t {})
+//        {
+//            m_stack.pop();
+//            co_return ph::factor_t<ph::minus_t, ph::number_t> {token};
+//        }
+////        else
+////        {
+////            cout << "ERROR" << endl;
+////            throw runtime_error ("");
+////        }
+//
+////        cout << m_stack.top() << endl;
+//
+//    } else if (token == ph::rparen_t {} and (not m_stack.empty ()))
+//    {
+//        cout << "rparen" << endl;
+//        auto& token = m_stack.top ();
+//        m_stack.pop();
+//        if (not m_stack.empty ())
+//        {
+//
+//        }
+//    }
+//
+//    auto& a = co_await get_token;
     
     cout << "...factor" << endl;
-    co_return 2;
-
+//    co_return ph::number_t {};
+    
 }
 
 auto term () -> parser
@@ -80,16 +169,16 @@ auto term () -> parser
 
     co_await factor ();
     cout << "...term" << endl;
-    co_return 2;
+    co_return ph::number_t {};
 }
 
 auto expression () -> parser
 {
-    cout << "expression..." << endl;
+//    cout << "expression..." << endl;
     
     co_await term ();
-    cout << "...expression" << endl;
-    co_return 2;
+//    cout << "...expression" << endl;
+    co_return ph::number_t {};
 }
 
 auto parse () -> parser
@@ -101,7 +190,7 @@ auto parse () -> parser
 //        auto& a = co_await get_top_from_stack;
 
     }
-    co_return 2;
+    co_return variant <TOKENS> {in_place_type_t<ph::number_t>{}};
 }
 
 
@@ -122,11 +211,15 @@ auto run () -> int
     
 //    return;
 //    vector <ph::Token> tokens = lex ("-4*5+6-(7+8)/97");
-//    vector <ph::Token> tokens = lex ("-4*5+6-(7+8)/97");
-    vector <ph::Token> tokens = lex ("-*f+-(--------/6+++++++");
+    vector <ph::Token> tokens = lex ("-4*5+6-(7+8)/97");
+//    vector <ph::Token> tokens = lex ("-*f+-(--------/6+++++++");
 
 //    parse2 (tokens);
     parser p = parse ();
+    p.parse (tokens [0]);
+    cout << "======================" << endl;
+    p.parse (tokens [1]);
+    return 0;
     for (auto const& token : tokens)
     {
         p.parse (token);

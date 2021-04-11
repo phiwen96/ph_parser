@@ -45,6 +45,9 @@ struct exp
     ph::lparen_t, \
     ph::rparen_t, \
     ph::factor_t <ph::number_t>, \
+    ph::factor_t <ph::minus_t, ph::number_t>, \
+    ph::factor_t <ph::lparen_t, ph::expression_t, ph::rparen_t>, \
+    ph::factor_t <ph::minus_t, ph::lparen_t, ph::expression_t, ph::rparen_t>, \
     ph::term_t, \
     ph::expression_t
 
@@ -57,6 +60,9 @@ struct exp
     X (lparen_t) \
     X (rparen_t) \
     X (factor_t <number_t>) \
+    X (factor_t <minus_t, number_t>) \
+    X (factor_t <lparen_t, expression_t, rparen_t>) \
+    X (factor_t <minus_t, lparen_t, expression_t, rparen_t>) \
     X (term_t) \
     X (expression_t)
 
@@ -120,6 +126,30 @@ struct factor_t <minus_t, number_t>
     }
 };
 
+template <>
+struct factor_t <lparen_t, expression_t, rparen_t>
+{
+    number_t m_number;
+    
+    template <typename Variant>
+    factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)) * -1)
+    {
+        
+    }
+};
+
+template <>
+struct factor_t <minus_t, lparen_t, expression_t, rparen_t>
+{
+    number_t m_number;
+    
+    template <typename Variant>
+    factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)) * -1)
+    {
+        
+    }
+};
+
 
 struct term_t
 {
@@ -164,71 +194,9 @@ struct term_t
  */
 
 
-template <int...>
-struct production_rules;
 
-template <>
-struct production_rules <>
-{
-    bool accept ()
-    {
-        return false;
-    }
-};
 
-template <>
-struct production_rules <1>
-{
-    
-};
-template <>
-struct production_rules <2>
-{
-    
-};
-template <>
-struct production_rules <3>
-{
-    
-};
-template <>
-struct production_rules <4>
-{
-    
-};
-template <>
-struct production_rules <5>
-{
-    
-};
-template <>
-struct production_rules <6>
-{
-    
-};
-template <>
-struct production_rules <7>
-{
-        
-};
-template <>
-struct production_rules <8>
-{
-    
-};
-template <>
-struct production_rules <9>
-{
-    
-};
-template <>
-struct production_rules <10>
-{
-    bool accept ()
-    {
-        
-    }
-};
+
 
 
 
@@ -236,20 +204,20 @@ struct production_rules <10>
 
 using Token = variant <TOKENS>;
 
-#define X(x) \
+#define X(...) \
     template <typename... T> \
-    constexpr auto operator== (variant <T...> const& rhs, ph::x const& lhs) -> bool\
+    constexpr auto operator== (variant <T...> const& rhs, ph::__VA_ARGS__ const& lhs) -> bool\
     { \
-    return visit (overload {[](ph::x const& lhs){return true;}, [](auto const&){return false;}}, rhs); \
+    return visit (overload {[](ph::__VA_ARGS__ const& lhs){return true;}, [](auto const&){return false;}}, rhs); \
     }
 
     MY_LIST
 #undef X
 
-#define X(x) \
-    ostream& operator<< (ostream& os, ph::x const& n) \
+#define X(...) \
+    ostream& operator<< (ostream& os, ph::__VA_ARGS__ const& n) \
     { \
-        return os << BOOST_PP_STRINGIZE (x); \
+        return os <<  #__VA_ARGS__; \
     }
 
     MY_LIST

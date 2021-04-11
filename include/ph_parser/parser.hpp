@@ -56,7 +56,7 @@ using Stack = stack <ph::Token>;
 
 struct parser
 {
-    using value_type = int;
+    using value_type = variant <TOKENS>;
     using initial_suspend_awaitable_type = suspend_never;
     using final_suspend_awaitable_type = i_was_co_awaited_and_now_i_am_suspending;
     
@@ -125,16 +125,23 @@ struct parser
 
                 auto await_suspend (coroutine_handle <promise_type> my_handle) noexcept -> coroutine_handle <>
                 {
-                    if (my_handle.promise().m_this_function_co_awaited_me)
+                    auto& parent_promise = my_handle.promise();
+                    auto& parent_handle = parent_promise.m_this_function_co_awaited_me;
+                    if (parent_handle)
                     {
-//                        cout << "kuk" << endl;
-//                        my_handle.promise().m_parent -> m_current = &my_handle.promise();
-                        my_handle.promise().m_parent -> m_current = my_handle.promise().m_parent;
-                        return my_handle.promise().m_this_function_co_awaited_me;
+                        cout << "kuk" << endl;
+                        parent_promise.m_current = &parent_promise;
+//                        my_handle.promise().m_parent -> m_current = &coroutine_handle<promise_type>::from_promise(*my_handle.promise().m_parent).promise();
+
+//                        my_handle.promise().m_parent -> m_current = my_handle.promise().m_parent;
+                        return parent_handle;
+                    } else
+                    {
+                        return noop_coroutine ();
                     }
                     
                    
-                    return noop_coroutine ();
+                    
                 }
                 
                 auto await_resume () noexcept
@@ -187,15 +194,19 @@ struct parser
                     return false;
                 }
                 
-                auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
+                auto await_suspend (coroutine_handle <promise_type> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
+                    cout << "mo" << endl;
 //                    return co_awaited_me;
-                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
+//                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
+//                    m_promise.m_current = co_awaited_me;
+
                     return true;
                 }
                 
                 auto await_resume () -> variant <TOKENS>&
                 {
+                    cout << "haha" << endl;
                     return m_promise.m_current_token;
                 }
             };
