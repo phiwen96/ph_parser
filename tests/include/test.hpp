@@ -86,6 +86,7 @@ minus:
 
         if (token == ph::number_t {})
         {
+            cout << token << endl;
             co_return ph::factor_t <ph::minus_t, ph::number_t> {token};
 
         } else
@@ -121,7 +122,7 @@ minus_lparen_expression:
     }
     
     
-
+    
     
     cout << "...factor" << endl;
 }
@@ -130,7 +131,9 @@ auto term () -> parser
 {
     cout << "term..." << endl;
 
-    auto& token = co_await factor ();
+    auto& m_factor = co_await factor ();
+    auto& token = co_await type_list <TOKENS>;
+    cout << m_factor << endl;
     cout << token << endl;
     cout << "...term" << endl;
     co_return ph::number_t {};
@@ -183,6 +186,7 @@ auto run () -> int
     p.parse (tokens [0]);
     p.parse (tokens [1]);
     p.parse (tokens [2]);
+    p.parse (tokens [3]);
     cout << "======================" << endl;
    
     return 0;

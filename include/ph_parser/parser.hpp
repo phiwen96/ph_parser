@@ -109,14 +109,15 @@ struct parser
 
                 auto await_suspend (coroutine_handle <promise_type> my_handle) noexcept -> coroutine_handle <>
                 {
-                    auto& parent_promise = my_handle.promise();
+                    auto& parent_promise = *my_handle.promise().m_parent;
                     auto& parent_handle = parent_promise.m_this_function_co_awaited_me;
                     if (parent_handle)
                     {
 //                        cout << "kuk" << endl;
                         parent_promise.m_current = &parent_promise;
-//                        my_handle.promise().m_parent -> m_current = &coroutine_handle<promise_type>::from_promise(*my_handle.promise().m_parent).promise();
-
+                        /**
+                         why above doesn't work????
+                         */
 //                        my_handle.promise().m_parent -> m_current = my_handle.promise().m_parent;
                         return parent_handle;
                     } else
@@ -172,19 +173,24 @@ struct parser
             struct awaitable
             {
                 promise_type& m_promise;
-                
+                coroutine_handle<promise_type> m_handle = coroutine_handle<promise_type>::from_promise(m_promise);
+
                 auto await_ready ()
                 {
+//                    cout << "await_ready" << endl;
                     return false;
+//                    return m_handle.done();
                 }
                 
                 auto await_suspend (coroutine_handle <promise_type> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
+//                    cout << "await_suspend" << endl;
                     return true;
                 }
                 
                 auto await_resume () -> variant <TOKENS>&
                 {
+//                    cout << "await_resume" << endl;
                     return m_promise.m_current_token;
                 }
             };
@@ -241,44 +247,6 @@ struct parser
             };
             return awaitable {*this};
         }
-        
-        template <int N>
-        auto await_transform (int const(&a)[N])
-        {
-            m_ok = [a](int i) {
-                for (auto j : a)
-                {
-                    if (i == j)
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            };
-            
-            struct awaitable
-            {
-                promise_type& m_promise;
-                
-                auto await_ready ()
-                {
-                    return false;
-                }
-                
-                auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
-                {
-                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
-                    return true;
-                }
-                
-                auto await_resume () -> token&
-                {
-                    return m_promise.m_found_token;
-                }
-            };
-            return awaitable {*this};
-        }
-        
 
         auto await_transform (parser co_awaited)
         {
@@ -292,7 +260,8 @@ struct parser
                 coroutine_handle<promise_type> m_handle = coroutine_handle<promise_type>::from_promise(m_promise);
                 auto await_ready ()
                 {
-                    return m_handle.done();
+//                    return m_handle.done();
+                    return false;
                 }
                 
                 auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
