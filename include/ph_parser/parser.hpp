@@ -38,7 +38,7 @@ constexpr auto is_variant_of_current_type (auto&& a, variant<U...> const& v) -> 
 }
 #define GETTER_STRUCTS \
     X (get_stack) \
-    X (get_top_from_stack)
+    X (get_token)
 
 #define X(s) \
     struct _##s {}; \
@@ -72,10 +72,10 @@ struct parser
         
         token::type m_looking_for_token;
         token m_found_token;
-        function <bool(ph::Token const&)> m_ok;
+        function <bool(ph::Token const&)> m_ok = [](ph::Token const&){return true;};
         promise_type* m_current {this};
         promise_type* m_parent {nullptr};
-        ph::Token m_current_token;
+        variant <TOKENS> m_current_token;
         stack <variant <TOKENS>> m_stack;
         
 //        expression* m_rhs;
@@ -110,8 +110,10 @@ struct parser
             
             struct i_was_co_awaited
             {
+                promise_type& m_promise;
                 auto await_ready () noexcept -> bool
                 {
+                    
                     return false;
                 }
                 
@@ -125,24 +127,26 @@ struct parser
                 {
                     if (my_handle.promise().m_this_function_co_awaited_me)
                     {
-                        my_handle.promise().m_parent -> m_current = &my_handle.promise();
-                        
+//                        cout << "kuk" << endl;
+//                        my_handle.promise().m_parent -> m_current = &my_handle.promise();
+                        my_handle.promise().m_parent -> m_current = my_handle.promise().m_parent;
+                        return my_handle.promise().m_this_function_co_awaited_me;
                     }
                     
-                    auto& parent = my_handle.promise().m_this_function_co_awaited_me;
-                    
-                    return parent ? parent : noop_coroutine ();
+                   
+                    return noop_coroutine ();
                 }
                 
                 auto await_resume () noexcept
                 {
-                    
+//                    cout << "tjoo" << endl;
+//                    return *m_promise.m_parent
                 }
             };
-            return i_was_co_awaited {};
+            return i_was_co_awaited {*this};
         }
         
-        auto await_transform (_get_top_from_stack)
+        auto await_transform (_get_token)
         {
             struct awaitable
             {
@@ -150,7 +154,7 @@ struct parser
                 
                 auto await_ready ()
                 {
-                    return false;
+                    return true;
                 }
                 
                 auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
@@ -160,9 +164,10 @@ struct parser
                     return true;
                 }
                 
-                auto await_resume () -> auto&
+                auto await_resume () -> variant <TOKENS> &
                 {
-                    return m_promise.m_stack.top();
+//                    return m_promise.m_stack.top();
+                    return m_promise.m_current_token;
                 }
             };
             return awaitable {*this};
@@ -224,19 +229,20 @@ struct parser
         
         auto await_transform (_get_stack)
         {
+//            cout << "tjo" << endl;
             struct awaitable
             {
                 promise_type& m_promise;
                 
                 auto await_ready ()
                 {
-                    return false;
+//                    return coroutine_handle <promise_type>::from_promise (m_promise).done()
+                    return true;
                 }
                 
                 auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
-                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
-                    return true;
+
                 }
                 
                 auto await_resume () -> stack <variant <TOKENS>>&
@@ -288,7 +294,7 @@ struct parser
         auto await_transform (parser co_awaited)
         {
             co_awaited.m_promise.m_parent = this;
-//            m_current = &co_awaited.m_promise;
+            m_current = &co_awaited.m_promise;
 //            m_value -> m_rhs = co_awaited.m_promise.m_value;
             
             struct awaitable
@@ -297,14 +303,18 @@ struct parser
                 coroutine_handle<promise_type> m_handle = coroutine_handle<promise_type>::from_promise(m_promise);
                 auto await_ready ()
                 {
+                    
 //                    return false;
-//                    return m_handle.done();
-                    return false;
+                    return m_handle.done();
+//                    return false;
                 }
                 
                 auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
                     m_promise.m_this_function_co_awaited_me = co_awaited_me;
+//                    cout << "bajs" << endl;
+
+//                    cout << "hi" << endl;
 //                    return true;
 //                    return m_handle;
                     return true;
@@ -313,10 +323,11 @@ struct parser
                 auto await_resume () //-> token&
                 {
 //                    return m_promise.m_found_token;
-                    return m_handle.resume();
-                    cout << "tjo" << endl;
-//                    return coroutine_handle<promise_type>::from_promise(m_promise);
+//                    cout << "hejsan" << endl;
+
 //                    return m_handle;
+//                    return coroutine_handle<promise_type>::from_promise(m_promise);
+//                    return m_promise.m_this_function_co_awaited_me;
                 }
             };
             return awaitable {co_awaited.m_promise};
@@ -331,10 +342,13 @@ struct parser
                 if (m_ok (e))
                 {
                     m_current_token = e;
+//                    m_current_token = e;
+//                    cout << "tjo" << endl;
+                    
                     coroutine_handle <promise_type>::from_promise (*m_current).resume ();
                 } else
                 {
-                    
+                    m_stack.push (e);
                 }
                 
             } else
@@ -368,6 +382,10 @@ struct parser
     parser (parser&& other) : m_promise {other.m_promise}
     {
 
+    }
+    ~parser ()
+    {
+//        coroutine_handle <promise_type>::from_promise (m_promise).destroy();
     }
     parser (parser const&) = delete;
     parser& operator=(parser const&) = delete;

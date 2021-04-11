@@ -87,6 +87,12 @@ struct rparen_t
     
 };
 
+//template <typename...>
+struct expression_t
+{
+    explicit expression_t () = default;
+};
+
 template <typename...>
 struct factor_t;
 
@@ -102,15 +108,25 @@ struct factor_t <number_t>
     }
 };
 
+template <>
+struct factor_t <minus_t, number_t>
+{
+    number_t m_number;
+    
+    template <typename Variant>
+    factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)) * -1)
+    {
+        
+    }
+};
+
+
 struct term_t
 {
     explicit term_t () = default;
 };
 
-struct expression_t
-{
-    explicit expression_t () = default;
-};
+
 
 
 /**
