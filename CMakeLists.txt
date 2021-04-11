@@ -13,6 +13,12 @@ add_subdirectory (cmake/phake)
 if (NOT TARGET ph_coroutines)
 	add_subdirectory (dependencies/ph_coroutines)
 endif ()
+if (NOT TARGET ph_type_list)
+	add_subdirectory (dependencies/ph_type_list)
+endif ()
+if (NOT TARGET ph_macros)
+	add_subdirectory (dependencies/ph_macros)
+endif ()
 
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 	

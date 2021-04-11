@@ -4,6 +4,10 @@
 #include <ph_coroutines/co_promise.hpp>
 #include <ph_coroutines/i_was_co_awaited_and_now_i_am_suspending.hpp>
 #include <experimental/coroutine>
+#include <ph_type_list/type_list.hpp>
+#include "common.hpp"
+
+
 using namespace std;
 using namespace experimental;
 
@@ -21,10 +25,38 @@ auto fiind (auto&& fun)
     }
 }
 
+template <typename T, typename... U>
+constexpr auto is_variant_of_current_type (variant<U...> const& v) -> bool
+{
+    return visit ([]<typename V>(V const& u) constexpr -> bool {return is_same_v <V, T>;}, v);
+}
+
+template <typename... U>
+constexpr auto is_variant_of_current_type (auto&& a, variant<U...> const& v) -> bool
+{
+    return visit ([]<typename V>(V const& u) constexpr -> bool {return is_same_v <V, decltype (a)>;}, v);
+}
+#define GETTER_STRUCTS \
+    X (get_stack) \
+    X (get_top_from_stack)
+
+#define X(s) \
+    struct _##s {}; \
+    inline constexpr _##s s {};
+
+    GETTER_STRUCTS
+#undef X
+
+
+
+
+
+
+using Stack = stack <ph::Token>;
 
 struct parser
 {
-    using value_type = expression*;
+    using value_type = int;
     using initial_suspend_awaitable_type = suspend_never;
     using final_suspend_awaitable_type = i_was_co_awaited_and_now_i_am_suspending;
     
@@ -40,13 +72,41 @@ struct parser
         
         token::type m_looking_for_token;
         token m_found_token;
-        function <bool(int)> m_ok;
-        promise_type* m_current = this;
+        function <bool(ph::Token const&)> m_ok;
+        promise_type* m_current {this};
         promise_type* m_parent {nullptr};
+        ph::Token m_current_token;
+        stack <variant <TOKENS>> m_stack;
+        
+//        expression* m_rhs;
+        
+//        auto yield_value (expression* lhs)
+//        {
+//            m_lhs = lhs;
+//            return suspend_never {};
+//        }
+        
+//        auto yield_value (struct value* value)
+//        {
+//            m_value -> m_lhs = value;
+//            return suspend_never {};
+//        }
+//        auto yield_value (binary_expression::type t)
+//        {
+//            m_value -> m_type = t;
+//            return suspend_never {};
+//        }
+        /**
+         push token to stack
+         */
+        auto yield_value (variant<TOKENS> const& tok)
+        {
+            m_stack.push (tok);
+            return suspend_never {};
+        }
         
         auto final_suspend () noexcept
         {
-            cout << "tjooo" << endl;
             
             struct i_was_co_awaited
             {
@@ -80,6 +140,111 @@ struct parser
                 }
             };
             return i_was_co_awaited {};
+        }
+        
+        auto await_transform (_get_top_from_stack)
+        {
+            struct awaitable
+            {
+                promise_type& m_promise;
+                
+                auto await_ready ()
+                {
+                    return false;
+                }
+                
+                auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
+                {
+//                    return co_awaited_me;
+                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
+                    return true;
+                }
+                
+                auto await_resume () -> auto&
+                {
+                    return m_promise.m_stack.top();
+                }
+            };
+            return awaitable {*this};
+        }
+        
+        template <typename... T>
+        auto await_transform (type_list_t <T...> tl)
+        {
+            m_ok = [](ph::Token const& v){return type_list_t <T...>::has_variant (v);};
+            
+            struct awaitable
+            {
+                promise_type& m_promise;
+                
+                auto await_ready ()
+                {
+                    return false;
+                }
+                
+                auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
+                {
+//                    return co_awaited_me;
+                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
+                    return true;
+                }
+                
+                auto await_resume () -> variant <TOKENS>&
+                {
+                    return m_promise.m_current_token;
+                }
+            };
+            return awaitable {*this};
+        }
+        
+        auto await_transform (suspend_always)
+        {
+            struct awaitable
+            {
+                promise_type& m_promise;
+                
+                auto await_ready ()
+                {
+                    return false;
+                }
+                
+                auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
+                {
+                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
+                    return true;
+                }
+                
+                auto await_resume () -> ph::Token
+                {
+                    return m_promise.m_current_token;
+                }
+            };
+            return awaitable {*this};
+        }
+        
+        auto await_transform (_get_stack)
+        {
+            struct awaitable
+            {
+                promise_type& m_promise;
+                
+                auto await_ready ()
+                {
+                    return false;
+                }
+                
+                auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
+                {
+                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
+                    return true;
+                }
+                
+                auto await_resume () -> stack <variant <TOKENS>>&
+                {
+                    return m_promise.m_stack;
+                }
+            };
+            return awaitable {*this};
         }
         
         template <int N>
@@ -123,7 +288,8 @@ struct parser
         auto await_transform (parser co_awaited)
         {
             co_awaited.m_promise.m_parent = this;
-            m_current = &co_awaited.m_promise;
+//            m_current = &co_awaited.m_promise;
+//            m_value -> m_rhs = co_awaited.m_promise.m_value;
             
             struct awaitable
             {
@@ -156,23 +322,24 @@ struct parser
             return awaitable {co_awaited.m_promise};
         }
         
-        void parse (token const& t)
+        void parse (ph::Token const& e)
         {
             if (m_current == this)
             {
-                if (m_ok (t.m_type))
+//                m_stack.push (e);
+
+                if (m_ok (e))
                 {
-        //            cout << "OK" << endl;
-                    m_found_token = t;
+                    m_current_token = e;
                     coroutine_handle <promise_type>::from_promise (*m_current).resume ();
                 } else
                 {
-        //            cout << "NOT OK" << endl;
+                    
                 }
                 
             } else
             {
-                m_current->parse (t);
+                m_current->parse (e);
             }
 
             
@@ -180,20 +347,16 @@ struct parser
     };
     
     
-    void parse (token const& t)
+    void parse (ph::Token const& e)
     {
-        m_promise.parse (t);
-//        if (m_promise.m_ok (t.m_type))
-//        {
-////            cout << "OK" << endl;
-//            m_promise.m_found_token = t;
-//            static_cast <coroutine_handle<promise_type>>(m_promise).resume ();
-//        } else
-//        {
-////            cout << "NOT OK" << endl;
-//        }
+        m_promise.parse (e);
     }
     
+
+    auto get_value () -> value_type
+    {
+        return m_promise.m_value;
+    }
     auto resume ()
     {
         return coroutine_handle <promise_type>::from_promise (m_promise).resume ();
@@ -218,38 +381,4 @@ struct parser
 
 
 
-auto parse (vector <token> const& tokens, binary_expression * curr, int& i) -> expression *
-{
-//    bool have_lhs {false};
-//    auto* exp = new binary_expression;
-    
-    for (; i < tokens.size (); ++i)
-    {
-        auto& tok = tokens [i];
-        
-        auto oper = tok.m_type;
-        
-        if (oper == token::type::number)
-        {
-            double num = stod (tok.m_text);
-            curr -> m_rhs = new number {num};
-            
-        } else if (oper == token::type::plus)
-        {
-            curr -> m_type = binary_expression::add;
-            
-        } else if (oper == token::type::minus)
-        {
-            curr -> m_type = binary_expression::sub;
-            
-        } else if (oper == token::type::mult)
-        {
-            curr -> m_type = binary_expression::mult;
-            
-        } else if (oper == token::type::div)
-        {
-            curr -> m_type = binary_expression::div;
-        }
-    }
-    return curr;
-}
+
