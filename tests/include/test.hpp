@@ -68,106 +68,70 @@ begin:
             
         } else if (token == ph::minus_t {})
         {
-            cout << "minus" << endl;
+//            cout << "minus" << endl;
 
-//            goto minus;
+            goto minus;
             
         } else
         {
-            cout << "number" << endl;
-            co_return ph::number_t {};
-//            goto lparen;
+//            cout << "number" << endl;
+            goto lparen;
+        }
+    }
+
+minus:
+    {
+        auto& token = co_await type_list <ph::number_t, ph::lparen_t>;
+
+
+        if (token == ph::number_t {})
+        {
+            co_return ph::factor_t <ph::minus_t, ph::number_t> {token};
+
+        } else
+        {
+            goto minus_lparen;
         }
     }
     
-    
-    minus:
+lparen:
     {
-        cout << "a..." << endl;
-        auto& token = co_await type_list <ph::number_t, ph::expression_t>;
-        cout << "...a" << endl;
-//        cout << token << endl;
+        auto& token = co_await type_list <ph::expression_t>;
+        goto lparen_expression;
     }
-//    if (token == ph::number_t {})
-//    {
-//        cout << "number" << endl;
-//
-////        co_return ph::number_t {};
-//    }
+    
+lparen_expression:
+    {
+        auto& token = co_await type_list <ph::rparen_t>;
+        cout << "yaaaaaaaay" << endl;
+    }
+
     
     
-//    minus:
-//    {
-//        auto& token = co_await type_list <ph::number_t, ph::minus_t, ph::lparen_t>;
-//
-//
-//        if (token == ph::number_t {})
-//        {
-////            co_return ph::factor_t <ph::minus_t, ph::number_t> {move (token)};
-//
-//        } else
-//        {
-////            co_return ph::number_t {};
-////            goto minus_lparen;
-//        }
-//    }
+minus_lparen:
+    {
+        auto& token = co_await type_list <ph::expression_t>;
+        goto minus_lparen_expression;
+    }
     
-    
-//    lparen:
-//
-//
-//    minus_lparen:
+minus_lparen_expression:
+    {
+        auto& token = co_await type_list <ph::expression_t>;
+        cout << "yaaaaaaaay" << endl;
+    }
     
     
 
     
-//    auto& m_stack = co_await get_stack;
-//
-//    if (token == ph::number_t {})
-//    {
-////        cout << "number" << token << endl;
-//
-//
-//        if (m_stack.empty ())
-//        {
-//            co_return ph::factor_t<ph::number_t> {token};
-//
-//        } else if (m_stack.top() == ph::minus_t {})
-//        {
-//            m_stack.pop();
-//            co_return ph::factor_t<ph::minus_t, ph::number_t> {token};
-//        }
-////        else
-////        {
-////            cout << "ERROR" << endl;
-////            throw runtime_error ("");
-////        }
-//
-////        cout << m_stack.top() << endl;
-//
-//    } else if (token == ph::rparen_t {} and (not m_stack.empty ()))
-//    {
-//        cout << "rparen" << endl;
-//        auto& token = m_stack.top ();
-//        m_stack.pop();
-//        if (not m_stack.empty ())
-//        {
-//
-//        }
-//    }
-//
-//    auto& a = co_await get_token;
-    
     cout << "...factor" << endl;
-//    co_return ph::number_t {};
-    
 }
 
 auto term () -> parser
 {
     cout << "term..." << endl;
 
-    co_await factor ();
+    auto& token = co_await factor ();
+    cout << token << endl;
     cout << "...term" << endl;
     co_return ph::number_t {};
 }
@@ -217,8 +181,10 @@ auto run () -> int
 //    parse2 (tokens);
     parser p = parse ();
     p.parse (tokens [0]);
-    cout << "======================" << endl;
     p.parse (tokens [1]);
+    p.parse (tokens [2]);
+    cout << "======================" << endl;
+   
     return 0;
     for (auto const& token : tokens)
     {

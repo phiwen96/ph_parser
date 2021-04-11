@@ -56,7 +56,7 @@ using Stack = stack <ph::Token>;
 
 struct parser
 {
-    using value_type = variant <TOKENS>;
+    using return_type = variant <TOKENS>;
     using initial_suspend_awaitable_type = suspend_never;
     using final_suspend_awaitable_type = i_was_co_awaited_and_now_i_am_suspending;
     
@@ -70,32 +70,16 @@ struct parser
             return coroutine_handle <promise_type>::from_promise (*this);
         }
         
+        using base = co_promise <parser>;
         token::type m_looking_for_token;
         token m_found_token;
         function <bool(ph::Token const&)> m_ok = [](ph::Token const&){return true;};
         promise_type* m_current {this};
         promise_type* m_parent {nullptr};
         variant <TOKENS> m_current_token;
+        variant <TOKENS> m_return_token;
         stack <variant <TOKENS>> m_stack;
-        
-//        expression* m_rhs;
-        
-//        auto yield_value (expression* lhs)
-//        {
-//            m_lhs = lhs;
-//            return suspend_never {};
-//        }
-        
-//        auto yield_value (struct value* value)
-//        {
-//            m_value -> m_lhs = value;
-//            return suspend_never {};
-//        }
-//        auto yield_value (binary_expression::type t)
-//        {
-//            m_value -> m_type = t;
-//            return suspend_never {};
-//        }
+
         /**
          push token to stack
          */
@@ -129,7 +113,7 @@ struct parser
                     auto& parent_handle = parent_promise.m_this_function_co_awaited_me;
                     if (parent_handle)
                     {
-                        cout << "kuk" << endl;
+//                        cout << "kuk" << endl;
                         parent_promise.m_current = &parent_promise;
 //                        my_handle.promise().m_parent -> m_current = &coroutine_handle<promise_type>::from_promise(*my_handle.promise().m_parent).promise();
 
@@ -196,17 +180,11 @@ struct parser
                 
                 auto await_suspend (coroutine_handle <promise_type> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
-                    cout << "mo" << endl;
-//                    return co_awaited_me;
-//                    m_promise.m_this_function_co_awaited_me = co_awaited_me;
-//                    m_promise.m_current = co_awaited_me;
-
                     return true;
                 }
                 
                 auto await_resume () -> variant <TOKENS>&
                 {
-                    cout << "haha" << endl;
                     return m_promise.m_current_token;
                 }
             };
@@ -314,31 +292,20 @@ struct parser
                 coroutine_handle<promise_type> m_handle = coroutine_handle<promise_type>::from_promise(m_promise);
                 auto await_ready ()
                 {
-                    
-//                    return false;
                     return m_handle.done();
-//                    return false;
                 }
                 
                 auto await_suspend (coroutine_handle <> co_awaited_me) //-> coroutine_handle <promise_type>
                 {
                     m_promise.m_this_function_co_awaited_me = co_awaited_me;
-//                    cout << "bajs" << endl;
-
-//                    cout << "hi" << endl;
-//                    return true;
-//                    return m_handle;
                     return true;
                 }
                 
-                auto await_resume () //-> token&
+                auto await_resume () -> auto&
                 {
-//                    return m_promise.m_found_token;
-//                    cout << "hejsan" << endl;
-
-//                    return m_handle;
-//                    return coroutine_handle<promise_type>::from_promise(m_promise);
-//                    return m_promise.m_this_function_co_awaited_me;
+                    return m_promise.m_return_value;
+                    cout << "await_resume" << endl;
+//                    return m_promise.m_return_token;
                 }
             };
             return awaitable {co_awaited.m_promise};
@@ -378,9 +345,9 @@ struct parser
     }
     
 
-    auto get_value () -> value_type
+    auto get_value () -> return_type
     {
-        return m_promise.m_value;
+        return m_promise.m_return_value;
     }
     auto resume ()
     {
