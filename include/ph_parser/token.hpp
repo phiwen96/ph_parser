@@ -48,7 +48,9 @@ struct exp
     ph::factor_t <ph::minus_t, ph::number_t>, \
     ph::factor_t <ph::lparen_t, ph::expression_t, ph::rparen_t>, \
     ph::factor_t <ph::minus_t, ph::lparen_t, ph::expression_t, ph::rparen_t>, \
-    ph::term_t, \
+    ph::term_t <ph::factor_t <ph::number_t>>, \
+    ph::term_t <ph::factor_t <ph::minus_t, ph::number_t>>, \
+    ph::term_t <ph::factor_t <ph::lparen_t, ph::expression_t, ph::rparen_t>>, \
     ph::expression_t
 
 #define MY_LIST \
@@ -63,7 +65,9 @@ struct exp
     X (factor_t <minus_t, number_t>) \
     X (factor_t <lparen_t, expression_t, rparen_t>) \
     X (factor_t <minus_t, lparen_t, expression_t, rparen_t>) \
-    X (term_t) \
+    X (term_t <factor_t <number_t>>) \
+    X (term_t <factor_t <minus_t, number_t>>) \
+    X (term_t <factor_t <lparen_t, expression_t, rparen_t>>) \
     X (expression_t)
 
 using number_t = double;
@@ -102,11 +106,14 @@ struct expression_t
 template <typename...>
 struct factor_t;
 
+template <typename...>
+struct term_t;
+
 template <>
 struct factor_t <number_t>
 {
     number_t m_number;
-    
+    factor_t () = default;
     template <typename Variant>
     factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)))
     {
@@ -118,19 +125,35 @@ template <>
 struct factor_t <minus_t, number_t>
 {
     number_t m_number;
+    factor_t () = default;
     
-    template <typename Variant>
-    factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)) * -1)
+    
+    template <typename... T>
+    factor_t (variant <T...> const& vari) : m_number (get <number_t> (vari) * -1)
     {
         
     }
+    factor_t (number_t&& number) : m_number {move (number)}
+    {
+        
+    }
+    factor_t (number_t const& number) : m_number {number}
+    {
+        
+    }
+    
+//    template <typename... T>
+//    operator term_t <T...> () &&
+//    {
+//        return m_number;
+//    }
 };
 
 template <>
 struct factor_t <lparen_t, expression_t, rparen_t>
 {
     number_t m_number;
-    
+    factor_t () = default;
     template <typename Variant>
     factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)) * -1)
     {
@@ -143,18 +166,116 @@ struct factor_t <minus_t, lparen_t, expression_t, rparen_t>
 {
     number_t m_number;
     
+    factor_t () = default;
+    
     template <typename Variant>
     factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)) * -1)
     {
         
     }
+    
+    factor_t (factor_t&& other) : m_number {move (other.m_number)}
+    {
+        
+    }
+    
+    factor_t (factor_t const& other) : m_number {other.m_number}
+    {
+        
+    }
+    
+    factor_t& operator= (factor_t const& other)
+    {
+        m_number = other.m_number;
+        return *this;
+    }
+    
+    
 };
 
+template <typename... T>
+factor_t <T...> const factor {};
 
-struct term_t
+#define FACTORS \
+factor_t <number_t>, \
+factor_t <minus_t, number_t>, \
+factor_t <lparen_t, expression_t, rparen_t>, \
+factor_t <minus_t, lparen_t, expression_t, rparen_t>
+
+//template <template <typename...> typename>
+//struct term_t;
+
+
+
+//template <>
+//struct term_t <>//<factor_t>
+//{
+//    variant <
+////    TOKENS
+////    ph::number_t,
+////    ph::plus_t,
+////    ph::minus_t,
+////    ph::multi_t,
+////    ph::divi_t,
+////    ph::lparen_t,
+////    ph::rparen_t,
+//    ph::factor_t <ph::number_t>,
+//    ph::factor_t <ph::minus_t, ph::number_t>,
+//    ph::factor_t <ph::lparen_t, ph::expression_t, ph::rparen_t>,
+//    ph::factor_t <ph::minus_t, ph::lparen_t, ph::expression_t, ph::rparen_t>
+////    ph::term_t,
+////    ph::expression_t
+//    > m_vari;
+//
+//
+//
+////    template <typename Variant>
+////    term_t (Variant&& vari) : m_vari (forward <Variant> (vari))
+////    {
+////
+////    }
+//};
+
+
+
+template <>
+struct term_t <factor_t <number_t>>
 {
-    explicit term_t () = default;
+    factor_t <number_t> m_vari;
+    
+//    term_t (auto&& v) : m_vari (forward <decltype (v)> (v))
+//    {
+//        cout << "tjo" << endl;
+//    }
+    
+//    term_t () = default;
 };
+
+template <>
+struct term_t <factor_t <minus_t, number_t>>
+{
+    factor_t <minus_t, number_t> m_vari;
+    
+    term_t (auto&& v) : m_vari (forward <decltype (v)> (v))
+    {
+        cout << "tjo" << endl;
+    }
+    
+//    term_t () = default;
+};
+
+template <>
+struct term_t <factor_t <lparen_t, expression_t, rparen_t>>
+{
+    using Factor = factor_t <lparen_t, expression_t, rparen_t>;
+    Factor m_vari;
+    
+    term_t () = default;
+//    term_t ()
+};
+
+//template <typename... T>
+
 
 
 

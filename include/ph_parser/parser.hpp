@@ -124,16 +124,10 @@ struct parser
                         
                         auto& parent_handle = my_handle.promise().m_this_function_co_awaited_me;
 
-//                        cout << "kuk" << endl;
                         parent_promise.m_current = &parent_promise;
-                        /**
-                         why above doesn't work????
-                         */
-//                        my_handle.promise().m_parent -> m_current = my_handle.promise().m_parent;
-//                        cout << "rumpa" << endl;
+
                         return coroutine_handle<promise_type>::from_promise (*parent_promise.m_current);
 
-                        return parent_handle;
                     } else
                     {
                         cout << "whaaaat" << endl;
@@ -265,7 +259,7 @@ struct parser
                 
                 auto await_resume () -> auto&
                 {
-                    cout << "await_resume" << endl;
+//                    cout << "await_resume" << endl;
 
                     return m_promise.m_return_value;
 //                    return m_promise.m_return_token;

@@ -55,12 +55,13 @@ void parse2 (vector <variant <TOKENS>> const& tokens)
 
 auto factor () -> parser
 {
-    cout << "factor..." << endl;
+//    cout << "factor..." << endl;
     
 //    auto& token = co_await type_list <ph::number_t, ph::rparen_t>;
 begin:
     {
-        auto& token = co_await type_list <ph::number_t, ph::minus_t, ph::lparen_t>;
+        auto& token = co_await type_list <TOKENS>;
+        
         if (token == ph::number_t {})
         {
             co_return token;
@@ -71,10 +72,14 @@ begin:
 
             goto minus;
             
-        } else
+        } else if (token == ph::lparen_t {})
         {
 //            cout << "number" << endl;
             goto lparen;
+        } else
+        {
+            cout << "WHAAAAAAT" << endl;
+            co_return token;
         }
     }
 
@@ -85,8 +90,11 @@ minus:
 
         if (token == ph::number_t {})
         {
-            cout << token << endl;
-            cout << "baaaa" << endl;
+//            cout << token << endl;
+//            cout << "baaaa" << endl;
+//            ph::factor_t <ph::minus_t, ph::number_t> f {token};
+//            ph::factor_t <ph::minus_t, ph::number_t> f2 {move (f)};
+//            f2 = move (f);
             co_return ph::factor_t <ph::minus_t, ph::number_t> {token};
 
         } else
@@ -124,19 +132,22 @@ minus_lparen_expression:
     
     
     
-    cout << "...factor" << endl;
+//    cout << "...factor" << endl;
 }
 
 auto term () -> parser
 {
-    cout << "term..." << endl;
+//    cout << "term..." << endl;
+begin:
+    {
+        
+        auto& m_factor = co_await factor ();
 
-    auto& m_factor = co_await factor ();
-    cout << m_factor << endl;
-
-    auto& token = co_await type_list <TOKENS>;
-    cout << token << endl;
-    cout << "...term" << endl;
+        if (m_factor == ph::factor <ph::minus_t, ph::number_t>)
+        {
+            cout << m_factor << endl;
+        }
+    }
     co_return ph::number_t {};
 }
 
@@ -153,7 +164,7 @@ auto parse () -> parser
 {
     for (;;)
     {
-        cout << "parse..." << endl;
+//        cout << "parse..." << endl;
         co_await expression();
 //        auto& a = co_await get_top_from_stack;
 
@@ -171,10 +182,15 @@ auto parse () -> parser
 
 auto run () -> int
 {
+    
+    
+    
+//    variant <TOKENS> v {ph::number_t{}};
+//    ph::factor_t <ph::minus_t, ph::number_t> m_factor {v};
+//    ph::term_t <ph::factor_t <ph::minus_t, ph::number_t>> m {m_factor};
 
     
-    
-    
+//    return 0;
   
     
 //    return;
@@ -189,13 +205,15 @@ auto run () -> int
 
     p.parse (tokens [1]);
     cout << "======================" << endl;
+    return 0;
 
     p.parse (tokens [2]);
     cout << "======================" << endl;
 
     p.parse (tokens [3]);
     cout << "======================" << endl;
-   
+    p.parse (tokens [4]);
+
     return 0;
     for (auto const& token : tokens)
     {
