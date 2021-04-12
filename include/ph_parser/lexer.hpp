@@ -236,10 +236,77 @@ using namespace experimental;
 
 
 
+auto lex (string const& input) -> vector <any>
+{
+    vector <any> result;
+    
+    struct Num
+    {
+        int m_power {0};
+        string m_number;
+    } num;
+    
+    for (auto c : input)
+    {
+        if (isdigit (c))
+        {
+            num.m_number += c;
+            ++num.m_power;
+        }
+        else
+        {
+            if (num.m_power > 0)
+            {
+                if (c == '.')
+                {
+                    num.m_number += c;
+                    continue;
+                }
+                else
+                {
+                    result.push_back (ph::number_t {stod (num.m_number)});
+                    num.m_power = 0;
+                    num.m_number.clear ();
+                }
+            }
+            
+            if (c == '+')
+            {
+                result.push_back (ph::plus_t{});
+            }
+            else if (c == '-')
+            {
+                result.emplace_back (ph::minus_t{});
+            }
+            else if (c == '*')
+            {
+                result.emplace_back (ph::multi_t{});
+            }
+            else if (c == '/')
+            {
+                result.emplace_back (ph::divi_t{});
+            }
+            else if (c == '(')
+            {
+                result.emplace_back (ph::lparen_t{});
+            }
+            else if (c == ')')
+            {
+                result.emplace_back (ph::rparen_t{});
+            }
+        }
+    }
+    
+    if (num.m_power > 0)
+    {
+        result.emplace_back (ph::number_t {stod (num.m_number)});
+    }
+    
+    return result;
+}
 
 
-
-auto lex (string const& input) -> vector <ph::Token>
+auto lex_oldie (string const& input) -> vector <ph::Token>
 {
     vector <ph::Token> result;
     

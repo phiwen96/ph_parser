@@ -19,6 +19,9 @@ endif ()
 if (NOT TARGET ph_macros)
 	add_subdirectory (dependencies/ph_macros)
 endif ()
+if (NOT TARGET phany)
+	add_subdirectory (dependencies/phany)
+endif ()
 
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 	

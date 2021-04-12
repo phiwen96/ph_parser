@@ -5,7 +5,10 @@
 #include <ph_parser/parser.hpp>
 #include <ph_type_list/type_list.hpp>
 #include <variant>
+#include <phany/phany.hpp>
 using namespace std;
+using namespace ph;
+
 
 
 
@@ -43,6 +46,7 @@ int loops {0};
 
 
 
+
 void parse2 (vector <variant <TOKENS>> const& tokens)
 {
     for (auto const& token : tokens)
@@ -53,26 +57,27 @@ void parse2 (vector <variant <TOKENS>> const& tokens)
 
 
 
-auto factor () -> parser
+auto factorize () -> parser
 {
 //    cout << "factor..." << endl;
     
-//    auto& token = co_await type_list <ph::number_t, ph::rparen_t>;
+//    auto& token = co_await type_list <number_t, rparen_t>;
 begin:
     {
-        auto& token = co_await type_list <TOKENS>;
+        any& token = co_await type_list <TOKENS>;
         
-        if (token == ph::number_t {})
+        if (token.type () == typeid (number_t))
         {
-            co_return token;
+//            co_return *t;
+            co_return any_cast <number_t> (token);
             
-        } else if (token == ph::minus_t {})
+        } else if (token.type () == typeid (minus_t))
         {
-//            cout << "minus" << endl;
+            cout << "minus" << endl;
 
             goto minus;
             
-        } else if (token == ph::lparen_t {})
+        } else if (token.type () == typeid (lparen_t))
         {
 //            cout << "number" << endl;
             goto lparen;
@@ -85,17 +90,17 @@ begin:
 
 minus:
     {
-        auto& token = co_await type_list <ph::number_t, ph::lparen_t>;
+        auto& token = co_await type_list <number_t, lparen_t>;
 
 
-        if (token == ph::number_t {})
+        if (token.type () == typeid (number_t))
         {
 //            cout << token << endl;
 //            cout << "baaaa" << endl;
-//            ph::factor_t <ph::minus_t, ph::number_t> f {token};
-//            ph::factor_t <ph::minus_t, ph::number_t> f2 {move (f)};
+//            factor_t <minus_t, number_t> f {token};
+//            factor_t <minus_t, number_t> f2 {move (f)};
 //            f2 = move (f);
-            co_return ph::factor_t <ph::minus_t, ph::number_t> {token};
+            co_return factor_t <minus_t, number_t> {any_cast <number_t> (token)};
 
         } else
         {
@@ -105,13 +110,13 @@ minus:
     
 lparen:
     {
-        auto& token = co_await type_list <ph::expression_t>;
+        any& token = co_await type_list <expression_t>;
         goto lparen_expression;
     }
     
 lparen_expression:
     {
-        auto& token = co_await type_list <ph::rparen_t>;
+        any& token = co_await type_list <rparen_t>;
         cout << "yaaaaaaaay" << endl;
     }
 
@@ -119,13 +124,13 @@ lparen_expression:
     
 minus_lparen:
     {
-        auto& token = co_await type_list <ph::expression_t>;
+        any& token = co_await type_list <expression_t>;
         goto minus_lparen_expression;
     }
     
 minus_lparen_expression:
     {
-        auto& token = co_await type_list <ph::expression_t>;
+        any& token = co_await type_list <expression_t>;
         cout << "yaaaaaaaay" << endl;
     }
     
@@ -141,14 +146,17 @@ auto term () -> parser
 begin:
     {
         
-        auto& m_factor = co_await factor ();
-
-        if (m_factor == ph::factor <ph::minus_t, ph::number_t>)
+        any m_factor = co_await factorize ();
+        
+        if (auto* f = any_cast <factor_t <void>> (&m_factor))
         {
-            cout << m_factor << endl;
+            f -> kiss ();
+        } else
+        {
+            cout << ":(" << endl;
         }
     }
-    co_return ph::number_t {};
+    co_return number_t {};
 }
 
 auto expression () -> parser
@@ -157,7 +165,7 @@ auto expression () -> parser
     
     co_await term ();
 //    cout << "...expression" << endl;
-    co_return ph::number_t {};
+    co_return number_t {};
 }
 
 auto parse () -> parser
@@ -169,7 +177,7 @@ auto parse () -> parser
 //        auto& a = co_await get_top_from_stack;
 
     }
-    co_return variant <TOKENS> {in_place_type_t<ph::number_t>{}};
+    co_return variant <TOKENS> {in_place_type_t<number_t>{}};
 }
 
 
@@ -182,21 +190,21 @@ auto parse () -> parser
 
 auto run () -> int
 {
+ 
+//    bool aa = typeid (int) == int{};
     
-    
-    
-//    variant <TOKENS> v {ph::number_t{}};
-//    ph::factor_t <ph::minus_t, ph::number_t> m_factor {v};
-//    ph::term_t <ph::factor_t <ph::minus_t, ph::number_t>> m {m_factor};
+//    variant <TOKENS> v {number_t{}};
+//    factor_t <minus_t, number_t> m_factor {v};
+//    term_t <factor_t <minus_t, number_t>> m {m_factor};
 
     
 //    return 0;
   
     
 //    return;
-//    vector <ph::Token> tokens = lex ("-4*5+6-(7+8)/97");
-    vector <ph::Token> tokens = lex ("-4*5+6-(7+8)/97");
-//    vector <ph::Token> tokens = lex ("-*f+-(--------/6+++++++");
+//    vector <Token> tokens = lex ("-4*5+6-(7+8)/97");
+    vector <any> tokens = lex ("-4*5+6-(7+8)/97");
+//    vector <Token> tokens = lex ("-*f+-(--------/6+++++++");
 
 //    parse2 (tokens);
     parser p = parse ();
@@ -283,7 +291,7 @@ auto run () -> int
     
     
     
-//    variant <ph::expression, ph::term, ph::factor, ph::number> d {in_place_type <ph::term>};
+//    variant <expression, term, factor, number> d {in_place_type <term>};
     
     
     

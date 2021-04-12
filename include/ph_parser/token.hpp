@@ -76,26 +76,32 @@ struct plus_t
 {
     
 };
+constexpr plus_t plus {};
 struct minus_t
 {
     
 };
+constexpr minus_t minus {};
 struct multi_t
 {
     
 };
+constexpr multi_t multi {};
 struct divi_t
 {
     
 };
+constexpr divi_t divi {};
 struct lparen_t
 {
     
 };
+constexpr lparen_t lparen {};
 struct rparen_t
 {
     
 };
+constexpr rparen_t rparen {};
 
 //template <typename...>
 struct expression_t
@@ -110,7 +116,13 @@ template <typename...>
 struct term_t;
 
 template <>
-struct factor_t <number_t>
+struct factor_t <void>
+{
+    virtual void kiss () = 0;
+};
+
+template <>
+struct factor_t <number_t> : factor_t <void>
 {
     number_t m_number;
     factor_t () = default;
@@ -119,10 +131,15 @@ struct factor_t <number_t>
     {
         
     }
+    
+    virtual void kiss ()
+    {
+        cout << "kiss" << endl;
+    }
 };
 
 template <>
-struct factor_t <minus_t, number_t>
+struct factor_t <minus_t, number_t> : factor_t <void>
 {
     number_t m_number;
     factor_t () = default;
@@ -142,6 +159,11 @@ struct factor_t <minus_t, number_t>
         
     }
     
+    virtual void kiss ()
+    {
+        cout << "kiss" << endl;
+    }
+    
 //    template <typename... T>
 //    operator term_t <T...> () &&
 //    {
@@ -150,7 +172,7 @@ struct factor_t <minus_t, number_t>
 };
 
 template <>
-struct factor_t <lparen_t, expression_t, rparen_t>
+struct factor_t <lparen_t, expression_t, rparen_t> : factor_t <void>
 {
     number_t m_number;
     factor_t () = default;
@@ -159,10 +181,14 @@ struct factor_t <lparen_t, expression_t, rparen_t>
     {
         
     }
+    virtual void kiss ()
+    {
+        cout << "kiss" << endl;
+    }
 };
 
 template <>
-struct factor_t <minus_t, lparen_t, expression_t, rparen_t>
+struct factor_t <minus_t, lparen_t, expression_t, rparen_t> : factor_t <void>
 {
     number_t m_number;
     
@@ -189,8 +215,10 @@ struct factor_t <minus_t, lparen_t, expression_t, rparen_t>
         m_number = other.m_number;
         return *this;
     }
-    
-    
+    virtual void kiss ()
+    {
+        cout << "kiss" << endl;
+    }
 };
 
 template <typename... T>

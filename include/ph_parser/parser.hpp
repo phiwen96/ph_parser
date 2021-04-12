@@ -6,7 +6,7 @@
 #include <experimental/coroutine>
 #include <ph_type_list/type_list.hpp>
 #include "common.hpp"
-
+using namespace ph;
 
 using namespace std;
 using namespace experimental;
@@ -52,11 +52,11 @@ constexpr auto is_variant_of_current_type (auto&& a, variant<U...> const& v) -> 
 
 
 
-using Stack = stack <ph::Token>;
+using Stack = stack <Token>;
 
 struct parser
 {
-    using return_type = variant <TOKENS>;
+    using return_type = any;//variant <TOKENS>;
     using initial_suspend_awaitable_type = suspend_never;
     using final_suspend_awaitable_type = i_was_co_awaited_and_now_i_am_suspending;
     
@@ -80,12 +80,16 @@ struct parser
         using base = co_promise <parser>;
         token::type m_looking_for_token;
         token m_found_token;
-        function <bool(ph::Token const&)> m_ok = [](ph::Token const&){return true;};
+        function <bool(any const&)> m_ok = [](any const&){return true;};
         promise_type* m_current {this};
         promise_type* m_parent {nullptr};
-        variant <TOKENS> m_current_token;
+//        variant <TOKENS> m_current_token;
+        any m_current_token;
+
         variant <TOKENS> m_return_token;
-        stack <variant <TOKENS>> m_stack;
+//        stack <variant <TOKENS>> m_stack;
+        stack <any> m_stack;
+
 
         /**
          push token to stack
@@ -152,7 +156,10 @@ struct parser
         template <typename... T>
         auto await_transform (type_list_t <T...> tl)
         {
-            m_ok = [](ph::Token const& v){return type_list_t <T...>::has_variant (v);};
+//            m_ok = [](Token const& v){return type_list_t <T...>::has_variant (v);};
+
+            m_ok = [](any const& a){return type_list_t <T...>::has_any (a);};
+
             
             struct awaitable
             {
@@ -174,7 +181,7 @@ struct parser
                     return true;
                 }
                 
-                auto await_resume () -> variant <TOKENS>&
+                auto await_resume () -> auto&
                 {
 //                    cout << "await_resume" << endl;
                     return m_promise.m_current_token;
@@ -200,7 +207,7 @@ struct parser
                     return true;
                 }
                 
-                auto await_resume () -> ph::Token
+                auto await_resume () -> auto&
                 {
                     return m_promise.m_current_token;
                 }
@@ -226,7 +233,7 @@ struct parser
 
                 }
                 
-                auto await_resume () -> stack <variant <TOKENS>>&
+                auto await_resume () -> auto&
                 {
                     return m_promise.m_stack;
                 }
@@ -268,7 +275,7 @@ struct parser
             return awaitable {co_awaited.m_promise};
         }
         
-        void parse (ph::Token const& e)
+        void parse (any const& e)
         {
             if (m_current == this)
             {
@@ -305,7 +312,7 @@ struct parser
     };
     
     
-    void parse (ph::Token const& e)
+    void parse (any const& e)
     {
         m_promise.parse (e);
     }
