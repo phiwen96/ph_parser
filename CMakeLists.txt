@@ -9,6 +9,11 @@ project (
 )	
 
 
+
+
+add_compile_definitions($<$<PLATFORM_ID:Windows>:Windows> $<$<PLATFORM_ID:Linux>:Linux> $<$<PLATFORM_ID:APPLE>:Apple> $<$<PLATFORM_ID:Darwin>:Darwin>)
+
+
 add_subdirectory (cmake/phake)
 if (NOT TARGET ph_coroutines)
 	add_subdirectory (dependencies/ph_coroutines)
