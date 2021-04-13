@@ -264,11 +264,11 @@ struct parser
                     return true;
                 }
                 
-                auto await_resume () -> auto&
+                auto await_resume () -> auto&&
                 {
 //                    cout << "await_resume" << endl;
 
-                    return m_promise.m_return_value;
+                    return move (m_promise.m_return_value);
 //                    return m_promise.m_return_token;
                 }
             };

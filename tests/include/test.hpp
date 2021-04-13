@@ -5,7 +5,8 @@
 #include <ph_parser/parser.hpp>
 #include <ph_type_list/type_list.hpp>
 #include <variant>
-#include <phany/phany.hpp>
+#include <ph_time/timer.hpp>
+//#include <phany/phany.hpp>
 using namespace std;
 using namespace ph;
 
@@ -64,7 +65,7 @@ auto factorize () -> parser
 //    auto& token = co_await type_list <number_t, rparen_t>;
 begin:
     {
-        any& token = co_await type_list <TOKENS>;
+        auto& token = co_await type_list <TOKENS>;
         
         if (token.type () == typeid (number_t))
         {
@@ -110,13 +111,13 @@ minus:
     
 lparen:
     {
-        any& token = co_await type_list <expression_t>;
+        auto& token = co_await type_list <expression_t>;
         goto lparen_expression;
     }
     
 lparen_expression:
     {
-        any& token = co_await type_list <rparen_t>;
+        auto& token = co_await type_list <rparen_t>;
         cout << "yaaaaaaaay" << endl;
     }
 
@@ -124,13 +125,13 @@ lparen_expression:
     
 minus_lparen:
     {
-        any& token = co_await type_list <expression_t>;
+        auto& token = co_await type_list <expression_t>;
         goto minus_lparen_expression;
     }
     
 minus_lparen_expression:
     {
-        any& token = co_await type_list <expression_t>;
+        auto& token = co_await type_list <expression_t>;
         cout << "yaaaaaaaay" << endl;
     }
     
@@ -146,12 +147,23 @@ auto term () -> parser
 begin:
     {
         
-        any m_factor = co_await factorize ();
-        
-        if (auto* f = any_cast <factor_t <void>> (&m_factor))
+        auto m_factor = co_await factorize ();
+    
+        if (auto* f = any_cast <factor_t <number_t>> (&m_factor))
         {
             f -> kiss ();
-        } else
+        } else if (auto* f = any_cast <factor_t <minus_t, number_t>> (&m_factor))
+        {
+            f -> kiss ();
+        } else if (auto* f = any_cast <factor_t <lparen_t, expression_t, rparen_t>> (&m_factor))
+        {
+            f -> kiss ();
+        } else if (auto* f = any_cast <factor_t <minus_t, lparen_t, expression_t, rparen_t>> (&m_factor))
+        {
+            f -> kiss ();
+        }
+        
+        else
         {
             cout << ":(" << endl;
         }
@@ -181,8 +193,241 @@ auto parse () -> parser
 }
 
 
+struct A
+{
+    A (){cout << "A ()" << endl;}
+    ~A (){cout << "~A ()" << endl;}
+
+};
+
+struct B
+{
+    B (){cout << "B ()" << endl;}
+    ~B (){cout << "~B ()" << endl;}
+};
+
+struct C
+{
+    C (){cout << "C ()" << endl;}
+    ~C (){cout << "~C ()" << endl;}
+};
 
 
+
+
+template <int, int, typename...>
+union vari {};
+
+template <typename T, typename... U>
+struct var
+{
+    int active {0};
+
+    vari <0, -1, T, U...> value;
+    
+    var () = default;
+
+
+    
+    auto operator= (T&& t) -> auto&
+    {
+        value.set_equal (forward <T> (t), active);
+        return *this;
+    }
+};
+
+//template <typename T>
+//struct var <T>
+//{
+//    vari <T> value;
+//
+//};
+
+struct emptyy {};
+
+template <int I, int construct, typename T, typename... U>
+//requires ((is_assignable_v<U, P> || ...))
+union vari <I, construct, T, U...>
+{
+    using value_type = T;
+    using tail_type = vari <I + 1, construct, U...>;
+    emptyy _;
+    value_type value;
+    tail_type _tail;
+    
+    vari ()
+        requires (construct > 0 and construct != I)
+    {
+            new (&_tail) tail_type;
+    }
+    
+    vari ()
+        requires (construct == I)
+    {
+            new (&value) value_type {};
+    }
+    
+    vari ()
+    requires (construct == -1)
+    {
+        
+    }
+    
+    template <int i>
+    requires (i != I)
+    auto get () -> auto&
+    {
+        return _tail.template get <i> ();
+    }
+    template <int i>
+    requires (i == I)
+    auto get () -> auto&
+    {
+        return *this;
+    }
+    
+    template <typename P>
+    requires (not is_same_v <T, P>)
+    auto get () -> auto&
+    {
+        return _tail.template get <P> ();
+    }
+    
+    template <typename P>
+    requires (is_same_v <T, P>)
+    auto get () -> auto&
+    {
+        return *this;
+    }
+    
+    
+
+    
+    auto operator= (T&& t) -> auto&
+    {
+        value = forward <decltype (t)> (t);
+        return value;
+    }
+    
+    
+    
+    void set_equal (T&& t, int i)
+    {
+        if (i == I)
+        {
+            
+            value = forward <T> (t);
+        } else
+        {
+
+            clear_value();
+        
+            new (_tail) decltype (_tail) {i};
+        }
+    }
+    
+    template <typename P>
+    auto set_equal (P&& p, int i) -> void
+    {
+        
+    }
+    
+    
+    constexpr auto clear_value () -> void
+    {
+        if constexpr (not is_trivially_destructible_v <T>)
+        {
+            value.~T ();
+        }
+    }
+    
+    template <typename P>
+    requires ((is_assignable_v<U, P> || ...))
+    auto operator= (P&& p) -> auto&
+    {
+//        if constexpr (not is_trivially_destructible_v <P>)
+//            _t.~T();
+        bool active = true;
+        
+        if constexpr (not is_trivially_destructible_v<T>)
+        {
+            if (active)
+                value.~T ();
+        }
+        return _tail = forward <P> (p);
+    }
+    
+    
+    
+    
+//    vari& operator= (auto&& t)
+//    {
+//
+//    }
+    
+    ~vari ()
+    {
+        
+        cout << "~kiss ()" << endl;
+    }
+};
+
+template <int I, int construct, typename T>
+union vari <I, construct, T>
+{
+    emptyy _;
+    T value;
+    
+    
+    
+    vari ()
+        requires (construct == I)
+    {
+            new (&value) T {};
+    }
+    
+    template <int i>
+    requires (i == I)
+    auto get () -> auto&
+    {
+        return *this;
+    }
+
+    template <typename P>
+    requires (is_same_v <T, P>)
+    auto get () -> auto&
+    {
+        return *this;
+    }
+    
+    vari& operator= (auto&& t)
+    {
+        value = forward <decltype (t)> (t);
+        return *this;
+    }
+    
+    
+    
+    ~vari ()
+    {
+
+    }
+};
+
+
+//template <typename T, typename... U>
+//union variable
+//{
+//    vari <T, U...> _value;
+//};
+
+//template <typename... T>
+//requires requires ()
+//{
+//    requires (sizeof... (T) > 0);
+////    requires ((is_assignable_v<U, P> || ...));
+//}
+//using var = vari <0, T...>;
 
 
 
@@ -190,7 +435,15 @@ auto parse () -> parser
 
 auto run () -> int
 {
- 
+    var <A, B, C> k;
+//    k = A{};
+//    k = C{};
+    cout << "==============" << endl;
+
+//    k = B {};
+    cout << "==============" << endl;
+    return 0;
+    
 //    bool aa = typeid (int) == int{};
     
 //    variant <TOKENS> v {number_t{}};
