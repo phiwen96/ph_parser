@@ -6,6 +6,7 @@
 #include <ph_type_list/type_list.hpp>
 #include <variant>
 #include <ph_time/timer.hpp>
+#include <ph_macros/macros.hpp>
 //#include <phany/phany.hpp>
 using namespace std;
 using namespace ph;
@@ -215,23 +216,41 @@ struct C
 
 
 
+
+
+
 template <int, int, typename...>
 union vari {};
 
 template <typename T, typename... U>
 struct var
 {
-    int active {0};
+    inline static constexpr int size = sizeof... (U) + 1;
+    int active {-1};
 
     vari <0, -1, T, U...> value;
     
     var () = default;
-
-
+    
+    
+    
     
     auto operator= (T&& t) -> auto&
     {
-        value.set_equal (forward <T> (t), active);
+        cout << "lkmk" << endl;
+        int j = 100;
+        if (j)
+        {
+            switch (j)
+            {
+#define X(n) \
+    cout << n << endl;
+                    SWITCH_CASE (200, cout << "")
+            }
+        }
+        
+        
+//        value.set_equal (forward <T> (t), active);
         return *this;
     }
 };
@@ -242,6 +261,9 @@ struct var
 //    vari <T> value;
 //
 //};
+
+
+
 
 struct emptyy {};
 
@@ -435,8 +457,11 @@ union vari <I, construct, T>
 
 auto run () -> int
 {
+    
+    
+    
     var <A, B, C> k;
-//    k = A{};
+    k = A{};
 //    k = C{};
     cout << "==============" << endl;
 
