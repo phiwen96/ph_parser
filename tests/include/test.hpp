@@ -239,11 +239,11 @@ auto run () -> int
 //    var <A, B, C> k;
 //    k = A{};
 //    k = C{};
-    cout << "==============" << endl;
+//    cout << "==============" << endl;
 
 //    k = B {};
-    cout << "==============" << endl;
-    return 0;
+//    cout << "==============" << endl;
+//    return 0;
     
 //    bool aa = typeid (int) == int{};
     
@@ -257,9 +257,12 @@ auto run () -> int
     
 //    return;
 //    vector <Token> tokens = lex ("-4*5+6-(7+8)/97");
-//    vector <var <TOKENS>> tokens = lex <var <TOKENS>>  ("-4*5+6-(7+8)/97");
+    vector <var <TOKENS>> tokens = lex <var <TOKENS>>  ("-4*5+6-(7+8)/97");
 //    vector <Token> tokens = lex ("-*f+-(--------/6+++++++");
-
+    return 0;
+    
+    for (auto const& v : tokens)
+        cout << v << endl;
 //    parse2 (tokens);
 //    parser p = parse ();
 //    p.parse (tokens [0]);

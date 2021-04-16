@@ -238,7 +238,7 @@ using namespace experimental;
 template <typename T>
 auto lex (string const& input) -> vector <T>;
 
-#ifdef EAD
+//#ifdef EAD
 template <>
 auto lex (string const& input) -> vector <var <TOKENS>>
 {
@@ -269,6 +269,7 @@ auto lex (string const& input) -> vector <var <TOKENS>>
                 else
                 {
                     result.push_back (ph::number_t {stod (num.m_number)});
+                    cout << "mf" << endl;
                     num.m_power = 0;
                     num.m_number.clear ();
                 }
@@ -308,7 +309,7 @@ auto lex (string const& input) -> vector <var <TOKENS>>
     
     return result;
 }
-#endif
+//#endif
 
 template <>
 auto lex (string const& input) -> vector <any>
