@@ -268,8 +268,8 @@ auto lex (string const& input) -> vector <var <TOKENS>>
                 }
                 else
                 {
-                    result.push_back (ph::number_t {stod (num.m_number)});
-                    cout << "mf" << endl;
+                    result.push_back (var <TOKENS> {ph::number_t {stod (num.m_number)}});
+//                    cout << "mf" << endl;
                     num.m_power = 0;
                     num.m_number.clear ();
                 }
@@ -277,35 +277,38 @@ auto lex (string const& input) -> vector <var <TOKENS>>
             
             if (c == '+')
             {
-                result.push_back (ph::plus_t{});
+                result.push_back (var <TOKENS> {ph::plus_t{}});
             }
             else if (c == '-')
             {
-                result.emplace_back (ph::minus_t{});
+                result.push_back (var <TOKENS> {ph::minus_t{}});
             }
             else if (c == '*')
             {
-                result.emplace_back (ph::multi_t{});
+                result.push_back (var <TOKENS> {ph::multi_t{}});
             }
             else if (c == '/')
             {
-                result.emplace_back (ph::divi_t{});
+                result.push_back (var <TOKENS> {ph::divi_t{}});
             }
             else if (c == '(')
             {
-                result.emplace_back (ph::lparen_t{});
+                result.push_back (var <TOKENS> {ph::lparen_t{}});
             }
             else if (c == ')')
             {
-                result.emplace_back (ph::rparen_t{});
+                result.push_back (var <TOKENS> {ph::rparen_t{}});
             }
         }
     }
     
     if (num.m_power > 0)
     {
-        result.emplace_back (ph::number_t {stod (num.m_number)});
+        result.push_back (var <TOKENS> {ph::number_t {stod (num.m_number)}});
     }
+    
+    for (auto& i : result)
+        cout << i << endl;
     
     return result;
 }
