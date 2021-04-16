@@ -16,3 +16,9 @@
 [submodule "dependencies/phany"]
 	path = dependencies/phany
 	url = https://github.com/phiwen96/phany
+[submodule "dependencies/ph_vari"]
+	path = dependencies/ph_vari
+	url = https://github.com/phiwen96/ph_vari
+[submodule "dependencies/ph_type"]
+	path = dependencies/ph_type
+	url = https://github.com/phiwen96/ph_type
