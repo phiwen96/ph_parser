@@ -15,6 +15,12 @@ add_compile_definitions($<$<PLATFORM_ID:Windows>:Windows> $<$<PLATFORM_ID:Linux>
 
 
 add_subdirectory (cmake/phake)
+if (NOT TARGET ph_type)
+	add_subdirectory (dependencies/ph_type)
+endif ()
+if (NOT TARGET ph_vari)
+	add_subdirectory (dependencies/ph_vari)
+endif ()
 if (NOT TARGET ph_coroutines)
 	add_subdirectory (dependencies/ph_coroutines)
 endif ()

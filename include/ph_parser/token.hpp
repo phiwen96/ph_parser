@@ -1,6 +1,8 @@
 #pragma once
 #include "common.hpp"
 #include <boost/preprocessor/variadic/to_tuple.hpp>
+#include <ph_vari/vari.hpp>
+#include <ph_type/type.hpp>
 
 using namespace std;
 
@@ -127,7 +129,7 @@ struct factor_t <number_t> : factor_t <void>
     number_t m_number;
     factor_t () = default;
     template <typename Variant>
-    factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)))
+    factor_t (Variant&& vari) : m_number (forward <Variant> (vari))
     {
         
     }
@@ -146,7 +148,7 @@ struct factor_t <minus_t, number_t> : factor_t <void>
     
     
     template <typename... T>
-    factor_t (variant <T...> const& vari) : m_number (get <number_t> (vari) * -1)
+    factor_t (var <T...> const& vari) : m_number (vari)
     {
         
     }
@@ -177,7 +179,7 @@ struct factor_t <lparen_t, expression_t, rparen_t> : factor_t <void>
     number_t m_number;
     factor_t () = default;
     template <typename Variant>
-    factor_t (Variant&& vari) : m_number (get <number_t> (forward <Variant> (vari)) * -1)
+    factor_t (Variant&& vari) : m_number (forward <Variant> (vari) * -1)
     {
         
     }

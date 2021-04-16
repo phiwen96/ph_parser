@@ -4,6 +4,8 @@
 #include <ph_coroutines/co_promise.hpp>
 #include <ph_coroutines/i_was_co_awaited_and_now_i_am_suspending.hpp>
 #include <experimental/coroutine>
+#include <ph_vari/vari.hpp>
+#include <ph_type/type.hpp>
 using namespace std;
 using namespace experimental;
 
@@ -233,9 +235,82 @@ using namespace experimental;
 //
 //};
 
+template <typename T>
+auto lex (string const& input) -> vector <T>;
 
+#ifdef EAD
+template <>
+auto lex (string const& input) -> vector <var <TOKENS>>
+{
+    vector <var <TOKENS>> result;
+    
+    struct Num
+    {
+        int m_power {0};
+        string m_number;
+    } num;
+    
+    for (auto c : input)
+    {
+        if (isdigit (c))
+        {
+            num.m_number += c;
+            ++num.m_power;
+        }
+        else
+        {
+            if (num.m_power > 0)
+            {
+                if (c == '.')
+                {
+                    num.m_number += c;
+                    continue;
+                }
+                else
+                {
+                    result.push_back (ph::number_t {stod (num.m_number)});
+                    num.m_power = 0;
+                    num.m_number.clear ();
+                }
+            }
+            
+            if (c == '+')
+            {
+                result.push_back (ph::plus_t{});
+            }
+            else if (c == '-')
+            {
+                result.emplace_back (ph::minus_t{});
+            }
+            else if (c == '*')
+            {
+                result.emplace_back (ph::multi_t{});
+            }
+            else if (c == '/')
+            {
+                result.emplace_back (ph::divi_t{});
+            }
+            else if (c == '(')
+            {
+                result.emplace_back (ph::lparen_t{});
+            }
+            else if (c == ')')
+            {
+                result.emplace_back (ph::rparen_t{});
+            }
+        }
+    }
+    
+    if (num.m_power > 0)
+    {
+        result.emplace_back (ph::number_t {stod (num.m_number)});
+    }
+    
+    return result;
+}
+#endif
 
-
+template <>
 auto lex (string const& input) -> vector <any>
 {
     vector <any> result;

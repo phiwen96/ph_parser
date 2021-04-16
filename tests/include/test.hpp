@@ -7,6 +7,8 @@
 #include <variant>
 #include <ph_time/timer.hpp>
 #include <ph_macros/macros.hpp>
+#include <ph_vari/vari.hpp>
+#include <ph_type/type.hpp>
 //#include <phany/phany.hpp>
 using namespace std;
 using namespace ph;
@@ -33,32 +35,11 @@ using namespace ph;
 
 int loops {0};
 
-//parser parse ()
-//{
-//    int m_loop = loops;
-//    ++loops;
-//
-//    begin:
-//
-//
-//
-//    has_lhs:
-//    co_return 3;
-//}
 
 
 
 
-void parse2 (vector <variant <TOKENS>> const& tokens)
-{
-    for (auto const& token : tokens)
-    {
-        cout << token << endl;
-    }
-}
-
-
-
+#ifdef KLL
 auto factorize () -> parser
 {
 //    cout << "factor..." << endl;
@@ -68,18 +49,18 @@ begin:
     {
         auto& token = co_await type_list <TOKENS>;
         
-        if (token.type () == typeid (number_t))
+        if (token == type <number_t>)
         {
 //            co_return *t;
-            co_return any_cast <number_t> (token);
+            co_return token;
             
-        } else if (token.type () == typeid (minus_t))
+        } else if (token == type <minus_t>)
         {
             cout << "minus" << endl;
 
             goto minus;
             
-        } else if (token.type () == typeid (lparen_t))
+        } else if (token == type <lparen_t>)
         {
 //            cout << "number" << endl;
             goto lparen;
@@ -95,14 +76,14 @@ minus:
         auto& token = co_await type_list <number_t, lparen_t>;
 
 
-        if (token.type () == typeid (number_t))
+        if (token == type <number_t>)
         {
 //            cout << token << endl;
 //            cout << "baaaa" << endl;
 //            factor_t <minus_t, number_t> f {token};
 //            factor_t <minus_t, number_t> f2 {move (f)};
 //            f2 = move (f);
-            co_return factor_t <minus_t, number_t> {any_cast <number_t> (token)};
+//            co_return factor_t <minus_t, number_t> {token};
 
         } else
         {
@@ -150,18 +131,15 @@ begin:
         
         auto m_factor = co_await factorize ();
     
-        if (auto* f = any_cast <factor_t <number_t>> (&m_factor))
+        if (m_factor == type <factor_t <number_t>>)
         {
-            f -> kiss ();
-        } else if (auto* f = any_cast <factor_t <minus_t, number_t>> (&m_factor))
+            
+        } else if (m_factor == type <factor_t <minus_t, number_t>>)
         {
-            f -> kiss ();
-        } else if (auto* f = any_cast <factor_t <lparen_t, expression_t, rparen_t>> (&m_factor))
+        } else if (m_factor == type <factor_t <lparen_t, expression_t, rparen_t>>)
         {
-            f -> kiss ();
-        } else if (auto* f = any_cast <factor_t <minus_t, lparen_t, expression_t, rparen_t>> (&m_factor))
+        } else if (m_factor == type <factor_t <minus_t, lparen_t, expression_t, rparen_t>>)
         {
-            f -> kiss ();
         }
         
         else
@@ -190,8 +168,10 @@ auto parse () -> parser
 //        auto& a = co_await get_top_from_stack;
 
     }
-    co_return variant <TOKENS> {in_place_type_t<number_t>{}};
+    co_return number_t{};
+//    co_return var <TOKENS> {in_place_type_t<number_t>{}};
 }
+#endif
 
 
 struct A
@@ -219,41 +199,7 @@ struct C
 
 
 
-template <int, int, typename...>
-union vari {};
 
-template <typename T, typename... U>
-struct var
-{
-    inline static constexpr int size = sizeof... (U) + 1;
-    int active {-1};
-
-    vari <0, -1, T, U...> value;
-    
-    var () = default;
-    
-    
-    
-    
-    auto operator= (T&& t) -> auto&
-    {
-        cout << "lkmk" << endl;
-        int j = 100;
-        if (j)
-        {
-            switch (j)
-            {
-#define X(n) \
-    cout << n << endl;
-                    SWITCH_CASE (200, cout << "")
-            }
-        }
-        
-        
-//        value.set_equal (forward <T> (t), active);
-        return *this;
-    }
-};
 
 //template <typename T>
 //struct var <T>
@@ -265,176 +211,6 @@ struct var
 
 
 
-struct emptyy {};
-
-template <int I, int construct, typename T, typename... U>
-//requires ((is_assignable_v<U, P> || ...))
-union vari <I, construct, T, U...>
-{
-    using value_type = T;
-    using tail_type = vari <I + 1, construct, U...>;
-    emptyy _;
-    value_type value;
-    tail_type _tail;
-    
-    vari ()
-        requires (construct > 0 and construct != I)
-    {
-            new (&_tail) tail_type;
-    }
-    
-    vari ()
-        requires (construct == I)
-    {
-            new (&value) value_type {};
-    }
-    
-    vari ()
-    requires (construct == -1)
-    {
-        
-    }
-    
-    template <int i>
-    requires (i != I)
-    auto get () -> auto&
-    {
-        return _tail.template get <i> ();
-    }
-    template <int i>
-    requires (i == I)
-    auto get () -> auto&
-    {
-        return *this;
-    }
-    
-    template <typename P>
-    requires (not is_same_v <T, P>)
-    auto get () -> auto&
-    {
-        return _tail.template get <P> ();
-    }
-    
-    template <typename P>
-    requires (is_same_v <T, P>)
-    auto get () -> auto&
-    {
-        return *this;
-    }
-    
-    
-
-    
-    auto operator= (T&& t) -> auto&
-    {
-        value = forward <decltype (t)> (t);
-        return value;
-    }
-    
-    
-    
-    void set_equal (T&& t, int i)
-    {
-        if (i == I)
-        {
-            
-            value = forward <T> (t);
-        } else
-        {
-
-            clear_value();
-        
-            new (_tail) decltype (_tail) {i};
-        }
-    }
-    
-    template <typename P>
-    auto set_equal (P&& p, int i) -> void
-    {
-        
-    }
-    
-    
-    constexpr auto clear_value () -> void
-    {
-        if constexpr (not is_trivially_destructible_v <T>)
-        {
-            value.~T ();
-        }
-    }
-    
-    template <typename P>
-    requires ((is_assignable_v<U, P> || ...))
-    auto operator= (P&& p) -> auto&
-    {
-//        if constexpr (not is_trivially_destructible_v <P>)
-//            _t.~T();
-        bool active = true;
-        
-        if constexpr (not is_trivially_destructible_v<T>)
-        {
-            if (active)
-                value.~T ();
-        }
-        return _tail = forward <P> (p);
-    }
-    
-    
-    
-    
-//    vari& operator= (auto&& t)
-//    {
-//
-//    }
-    
-    ~vari ()
-    {
-        
-        cout << "~kiss ()" << endl;
-    }
-};
-
-template <int I, int construct, typename T>
-union vari <I, construct, T>
-{
-    emptyy _;
-    T value;
-    
-    
-    
-    vari ()
-        requires (construct == I)
-    {
-            new (&value) T {};
-    }
-    
-    template <int i>
-    requires (i == I)
-    auto get () -> auto&
-    {
-        return *this;
-    }
-
-    template <typename P>
-    requires (is_same_v <T, P>)
-    auto get () -> auto&
-    {
-        return *this;
-    }
-    
-    vari& operator= (auto&& t)
-    {
-        value = forward <decltype (t)> (t);
-        return *this;
-    }
-    
-    
-    
-    ~vari ()
-    {
-
-    }
-};
 
 
 //template <typename T, typename... U>
@@ -460,8 +236,8 @@ auto run () -> int
     
     
     
-    var <A, B, C> k;
-    k = A{};
+//    var <A, B, C> k;
+//    k = A{};
 //    k = C{};
     cout << "==============" << endl;
 
@@ -481,31 +257,31 @@ auto run () -> int
     
 //    return;
 //    vector <Token> tokens = lex ("-4*5+6-(7+8)/97");
-    vector <any> tokens = lex ("-4*5+6-(7+8)/97");
+//    vector <var <TOKENS>> tokens = lex <var <TOKENS>>  ("-4*5+6-(7+8)/97");
 //    vector <Token> tokens = lex ("-*f+-(--------/6+++++++");
 
 //    parse2 (tokens);
-    parser p = parse ();
-    p.parse (tokens [0]);
-    cout << "======================" << endl;
-
-    p.parse (tokens [1]);
-    cout << "======================" << endl;
-    return 0;
-
-    p.parse (tokens [2]);
-    cout << "======================" << endl;
-
-    p.parse (tokens [3]);
-    cout << "======================" << endl;
-    p.parse (tokens [4]);
-
-    return 0;
-    for (auto const& token : tokens)
-    {
-        p.parse (token);
-
-    }
+//    parser p = parse ();
+//    p.parse (tokens [0]);
+//    cout << "======================" << endl;
+//
+//    p.parse (tokens [1]);
+//    cout << "======================" << endl;
+//    return 0;
+//
+//    p.parse (tokens [2]);
+//    cout << "======================" << endl;
+//
+//    p.parse (tokens [3]);
+//    cout << "======================" << endl;
+//    p.parse (tokens [4]);
+//
+//    return 0;
+//    for (auto const& token : tokens)
+//    {
+//        p.parse (token);
+//
+//    }
     return 0;
     
     
