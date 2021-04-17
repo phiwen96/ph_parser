@@ -39,7 +39,7 @@ int loops {0};
 
 
 
-#ifdef KLL
+
 auto factorize () -> parser
 {
 //    cout << "factor..." << endl;
@@ -83,7 +83,7 @@ minus:
 //            factor_t <minus_t, number_t> f {token};
 //            factor_t <minus_t, number_t> f2 {move (f)};
 //            f2 = move (f);
-//            co_return factor_t <minus_t, number_t> {token};
+            co_return factor_t <minus_t, number_t> {token};
 
         } else
         {
@@ -171,7 +171,7 @@ auto parse () -> parser
     co_return number_t{};
 //    co_return var <TOKENS> {in_place_type_t<number_t>{}};
 }
-#endif
+
 
 
 struct A
@@ -264,13 +264,13 @@ auto run () -> int
 //    for (auto const& v : tokens)
 //        cout << v << endl;
 //    parse2 (tokens);
-//    parser p = parse ();
-//    p.parse (tokens [0]);
-//    cout << "======================" << endl;
+    parser p = parse ();
+    p.parse (tokens [0]);
+    cout << "======================" << endl;
 //
-//    p.parse (tokens [1]);
-//    cout << "======================" << endl;
-//    return 0;
+    p.parse (tokens [1]);
+    cout << "======================" << endl;
+    return 0;
 //
 //    p.parse (tokens [2]);
 //    cout << "======================" << endl;
